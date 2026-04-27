@@ -1,0 +1,56 @@
+[project]
+name = "fast-api-learning"
+version = "0.1.0"
+description = "FastAPI + Python 학습 커리큘럼 (uv workspace 루트)"
+requires-python = ">=3.12"
+readme = "README.md"
+
+# 워크스페이스 멤버를 _실제로 설치_ 하려면 루트 dependency 로 등록 필요.
+# 등록 안 하면 .venv 에 들어가지 않아 콘솔 스크립트(예: greeter) 가 PATH 에 없음.
+dependencies = [
+    "step-01-python-basics",
+    "greeter",
+]
+
+# uv workspace 루트.
+[tool.uv.workspace]
+members = [
+    "01-python-basics",
+    "02-package-structure",
+]
+
+# 위 dependencies 가 _PyPI 가 아니라 워크스페이스_ 에서 온다고 명시.
+[tool.uv.sources]
+step-01-python-basics = { workspace = true }
+greeter = { workspace = true }
+
+# 워크스페이스 전체에서 공통으로 쓰는 개발 의존성
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "pre-commit>=4.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "N"]
+ignore = ["E501"]  # line too long: line-length로만 제한
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = [
+    "01-python-basics/tests",
+    "02-package-structure/tests",
+]

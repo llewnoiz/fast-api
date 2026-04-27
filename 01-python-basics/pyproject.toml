@@ -1,0 +1,14 @@
+[project]
+name = "step-01-python-basics"
+version = "0.1.0"
+description = "Python 기본 문법 + uv 사용법"
+requires-python = ">=3.12"
+# 이 단계는 표준 라이브러리만 사용 (의존성 없이 시작)
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]

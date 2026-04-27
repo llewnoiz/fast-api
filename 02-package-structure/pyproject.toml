@@ -1,0 +1,42 @@
+# ============================================================================
+# PEP 621 표준 메타데이터.
+# Java 의 `build.gradle` / `pom.xml`, Node 의 `package.json` 자리.
+# ============================================================================
+
+[project]
+name = "greeter"
+version = "0.1.0"
+description = "02 단계 학습용 미니 인사말 패키지 — 패키지 구조/Entry Point 데모"
+requires-python = ">=3.12"
+authors = [{ name = "FastAPI 학습자" }]
+readme = "README.md"
+license = { text = "MIT" }
+
+# 런타임 의존성 — 이 패키지가 _배포되면_ 함께 설치되는 것.
+dependencies = []
+
+# 콘솔 스크립트 entry point.
+# `uv sync` 또는 `pip install -e .` 시 `.venv/bin/greeter` 가 자동 생성됨.
+# Java `Main-Class` / Node `bin` 자리.
+[project.scripts]
+greeter = "greeter.cli:main"
+
+# `python -m greeter` 로도 실행되게 하려면 src/greeter/__main__.py 추가하면 됨.
+
+# ============================================================================
+# 빌드 시스템 — PEP 517/518.
+# `hatchling` 은 가볍고 표준에 가까운 backend (다른 옵션: setuptools, flit, poetry-core).
+# ============================================================================
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# src layout 명시 — wheel 에 어떤 폴더를 패키지로 넣을지.
+[tool.hatch.build.targets.wheel]
+packages = ["src/greeter"]
+
+# ============================================================================
+# uv workspace 멤버 표시 — 루트 pyproject.toml 의 [tool.uv.workspace] 가
+# 이 패키지를 자동 감지함. dev 의존성은 루트의 [dependency-groups] 에서.
+# ============================================================================
