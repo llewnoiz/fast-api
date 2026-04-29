@@ -1,0 +1,43 @@
+# Docker 빌드 컨텍스트에서 _제외_ 할 것들.
+# .gitignore 와 비슷하지만 _빌드_ 관점.
+#
+# 빌드 컨텍스트 = `docker build .` 의 `.` 가 가리키는 모든 파일.
+# 큰 파일이 있으면 빌드 _느려지고_ 시크릿 누출 위험.
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# venv / 캐시
+.venv/
+.uv-cache/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# 환경 / 시크릿
+.env
+.env.*
+!.env.example
+*.local
+
+# Git / IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Docker / Compose
+docker-compose.override.yml
+**/Dockerfile.local
+
+# 학습 자료 (런타임 불필요)
+**/README.md
+**/Makefile
+**/tests/

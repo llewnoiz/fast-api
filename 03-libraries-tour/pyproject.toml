@@ -1,0 +1,22 @@
+[project]
+name = "libraries-tour"
+version = "0.1.0"
+description = "03 단계 — 자주 쓰는 Python 라이브러리 투어 (pydantic, httpx, orjson, jsonpath, datetime, structlog, dotenv)"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic[email]>=2.9",
+    "httpx>=0.27",
+    "orjson>=3.10",
+    "jsonpath-ng>=1.6",
+    "python-dateutil>=2.9",
+    "structlog>=24.4",
+    "python-dotenv>=1.0",
+    "pydantic-settings>=2.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/libtour"]

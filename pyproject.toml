@@ -10,6 +10,18 @@ readme = "README.md"
 dependencies = [
     "step-01-python-basics",
     "greeter",
+    "libraries-tour",
+    "fastapi-hello",
+    "async-deep",
+    "request-error-version",
+    "testing-deep",
+    "auth-app",
+    "db-transaction",
+    "redis-ratelimit",
+    "service-comm-observability",
+    "kafka-queue",
+    "fastapi-common",
+    "tender",
 ]
 
 # uv workspace 루트.
@@ -17,21 +29,49 @@ dependencies = [
 members = [
     "01-python-basics",
     "02-package-structure",
+    "03-libraries-tour",
+    "04-fastapi-hello",
+    "06-async-deep",
+    "07-request-error-version",
+    "08-testing",
+    "09-auth",
+    "10-db-transaction",
+    "11-redis-ratelimit",
+    "12-service-comm-observability",
+    "13-kafka-queue",
+    "14-shared-package",
+    "15-mini-project",
 ]
 
 # 위 dependencies 가 _PyPI 가 아니라 워크스페이스_ 에서 온다고 명시.
 [tool.uv.sources]
 step-01-python-basics = { workspace = true }
 greeter = { workspace = true }
+libraries-tour = { workspace = true }
+fastapi-hello = { workspace = true }
+async-deep = { workspace = true }
+request-error-version = { workspace = true }
+testing-deep = { workspace = true }
+auth-app = { workspace = true }
+db-transaction = { workspace = true }
+redis-ratelimit = { workspace = true }
+service-comm-observability = { workspace = true }
+kafka-queue = { workspace = true }
+fastapi-common = { workspace = true }
+tender = { workspace = true }
 
 # 워크스페이스 전체에서 공통으로 쓰는 개발 의존성
 [dependency-groups]
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
+    "pytest-cov>=5",
     "ruff>=0.7",
     "mypy>=1.13",
     "pre-commit>=4.0",
+    "types-python-dateutil>=2.9",
+    "types-passlib>=1.7",
+    "testcontainers[postgres,redis]>=4.8",
 ]
 
 [tool.ruff]
@@ -48,9 +88,40 @@ strict = false
 warn_unused_ignores = true
 warn_redundant_casts = true
 
+# 타입 stub 제공 안 하는 외부 라이브러리들
+[[tool.mypy.overrides]]
+module = [
+    "jsonpath_ng.*",
+    "fastapi_limiter",
+    "fastapi_limiter.*",
+    "aiokafka",
+    "aiokafka.*",
+    "arq",
+    "arq.*",
+    "purgatory",
+    "purgatory.*",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = [
     "01-python-basics/tests",
     "02-package-structure/tests",
+    "03-libraries-tour/tests",
+    "04-fastapi-hello/tests",
+    "06-async-deep/tests",
+    "07-request-error-version/tests",
+    "08-testing/tests",
+    "09-auth/tests",
+    "10-db-transaction/tests",
+    "11-redis-ratelimit/tests",
+    "12-service-comm-observability/tests",
+    "13-kafka-queue/tests",
+    "14-shared-package/tests",
+    "15-mini-project/tests",
+]
+markers = [
+    "integration: testcontainers 가 필요한 통합 테스트 (도커 데몬 없으면 스킵)",
+    "e2e: 풀 스택 통합 테스트",
 ]

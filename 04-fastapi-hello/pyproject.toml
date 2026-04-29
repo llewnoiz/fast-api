@@ -1,0 +1,20 @@
+[project]
+name = "fastapi-hello"
+version = "0.1.0"
+description = "04 단계 — FastAPI Hello + OpenAPI + 설정 관리"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",   # [standard] 가 uvloop / httptools 포함 (성능)
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "structlog>=24.4",
+    "orjson>=3.10",              # ORJSONResponse 용
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app"]

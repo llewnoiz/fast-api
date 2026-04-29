@@ -1,0 +1,31 @@
+[project]
+name = "service-comm-observability"
+version = "0.1.0"
+description = "12 단계 — 서버간 통신 + 관측가능성"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "httpx>=0.27",
+    "tenacity>=9.0",                                # 재시도
+    "purgatory>=1.0",                               # async 친화 회로 차단기
+    "structlog>=24.4",
+    # OpenTelemetry — _자동 계측_ + OTLP exporter
+    "opentelemetry-api>=1.27",
+    "opentelemetry-sdk>=1.27",
+    "opentelemetry-instrumentation-fastapi>=0.48b0",
+    "opentelemetry-instrumentation-httpx>=0.48b0",
+    "opentelemetry-exporter-otlp-proto-http>=1.27",
+    # Prometheus
+    "prometheus-fastapi-instrumentator>=7.0",
+    "asgi-lifespan>=2.1",                           # tests
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/obsapp"]

@@ -1,0 +1,24 @@
+[project]
+name = "testing-deep"
+version = "0.1.0"
+description = "08 단계 — 테스팅 심화 (pytest fixture/parametrize, testcontainers, dependency overrides, coverage)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "psycopg[binary,pool]>=3.2",     # Postgres async 드라이버 (asyncpg 대안)
+    "redis>=5.0",                     # async 클라이언트도 같은 패키지에 포함
+    "httpx>=0.27",
+]
+
+# test 도구는 _루트_ dev 그룹에 있음 (워크스페이스 멤버 그룹은 루트 sync 에서 미활성).
+# pytest-cov, testcontainers[postgres,redis] 가 거기 등록됨.
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/testapp"]

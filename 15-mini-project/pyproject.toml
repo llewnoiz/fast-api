@@ -1,0 +1,37 @@
+[project]
+name = "tender"
+version = "0.1.0"
+description = "15 단계 — 통합 미니 tender 서비스 (04~14 결합)"
+requires-python = ">=3.12"
+dependencies = [
+    # 14 의 사내 공통 패키지 — 실무에선 git+ssh / 사내 PyPI / wheel
+    "fastapi-common",
+    # 풀 스택 인프라
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy[asyncio]>=2.0",
+    "alembic>=1.14",
+    "asyncpg>=0.30",
+    "psycopg[binary]>=3.2",
+    "redis>=5.0",
+    "structlog>=24.4",
+    "httpx>=0.27",
+    "asgi-lifespan>=2.1",
+    # 인증
+    "pyjwt>=2.10",
+    "passlib[bcrypt]>=1.7",
+    "bcrypt<4.1",
+    "python-multipart>=0.0.18",
+]
+
+[tool.uv.sources]
+fastapi-common = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tender"]

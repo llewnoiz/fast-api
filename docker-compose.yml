@@ -1,0 +1,115 @@
+# 05 단계 — 학습용 인프라 일괄.
+#
+# 모든 후속 단계 (06~15) 가 이 파일을 _재사용_ 한다.
+# `profiles` 로 필요한 서비스만 골라서 띄움 — 안 쓰는 서비스 자원 절약.
+#
+# 사용:
+#   docker compose --profile db up -d                 # Postgres 만
+#   docker compose --profile db --profile cache up -d # Postgres + Redis
+#   docker compose --profile all up -d                # 전부
+#   docker compose down -v                            # 정리 (볼륨까지)
+#
+# 컨테이너 _안에서_ 다른 서비스 호출 시 호스트명은 _서비스 이름_:
+#   postgres://postgres:postgres@db:5432/learning
+#   redis://cache:6379
+#   bootstrap.servers=kafka:9092
+#
+# 호스트(macOS)에서 호출 시는 localhost + 매핑된 포트:
+#   postgresql://postgres:postgres@localhost:5432/learning
+
+name: fast-api-learning
+
+services:
+  # ==========================================================================
+  # 10 단계 (DB + 트랜잭션) 에서 사용
+  # ==========================================================================
+  db:
+    image: postgres:16-alpine
+    profiles: [db, all]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-learning}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ==========================================================================
+  # 11 단계 (Redis + Rate Limit), 13 단계 (arq 큐) 에서 사용
+  # ==========================================================================
+  cache:
+    image: redis:7-alpine
+    profiles: [cache, all]
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - cache-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ==========================================================================
+  # 13 단계 (Kafka) — Redpanda 사용 (Kafka API 호환, Zookeeper 불필요)
+  # ==========================================================================
+  kafka:
+    image: redpandadata/redpanda:latest
+    profiles: [kafka, all]
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=512M
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --node-id=0
+      - --check=false
+      # 컨테이너 내부 와 호스트(macOS) 모두 접근 가능하게 두 listener
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://kafka:29092,OUTSIDE://localhost:9092
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"        # 호스트에서 접근
+      - "${KAFKA_ADMIN_PORT:-9644}:9644"  # 관리 API
+    volumes:
+      - kafka-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ==========================================================================
+  # (선택) 04 fastapi-hello 를 컨테이너로 띄우기 — 운영 흉내
+  # 빌드: docker compose --profile app build
+  # ==========================================================================
+  app:
+    profiles: [app, all]
+    build:
+      context: .
+      dockerfile: 05-infra-compose/Dockerfile
+    image: fast-api-learning/hello:dev
+    environment:
+      APP_ENV: dev
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8000
+      APP_LOG_LEVEL: INFO
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+
+volumes:
+  db-data:
+  cache-data:
+  kafka-data:
