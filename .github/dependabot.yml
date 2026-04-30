@@ -1,0 +1,30 @@
+# Dependabot — 의존성 자동 업데이트 PR 생성.
+#
+# 비교:
+#   renovate-bot: 더 풍부한 옵션 (그룹화, 스케줄, auto-merge 등)
+#   GitHub Actions + 직접 cron: 가능하지만 학습용 외에 권장 X
+
+version: 2
+updates:
+  # Python 의존성 — pyproject.toml + uv.lock
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # 메이저 업그레이드는 _수동 검토_ 가 안전 — minor/patch 만 자동
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions 자체도 업데이트 필요
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+  # Docker 베이스 이미지 — 보안 패치 추적
+  - package-ecosystem: "docker"
+    directory: "/05-infra-compose"
+    schedule:
+      interval: "monthly"

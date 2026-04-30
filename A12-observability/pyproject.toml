@@ -1,0 +1,23 @@
+[project]
+name = "obs-deep"
+version = "0.1.0"
+description = "A12 — 관측가능성 운영급 (Sentry / 구조화 로그 / OTel / SLO / Grafana / Alertmanager)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sentry-sdk[fastapi]>=2.18",
+    "opentelemetry-api>=1.27",
+    "opentelemetry-sdk>=1.27",
+    "opentelemetry-instrumentation-fastapi>=0.48b0",
+    "structlog>=24.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/obsdeep"]

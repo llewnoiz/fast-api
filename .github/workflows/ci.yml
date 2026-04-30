@@ -1,0 +1,108 @@
+# A3 — 메인 CI 파이프라인.
+#
+# 트리거: push to main / PR.
+# 흐름: lint → typecheck → unit test → integration test (도커 서비스).
+#
+# 비교:
+#   GitLab CI: .gitlab-ci.yml (stage: test, build, deploy)
+#   CircleCI:  .circleci/config.yml
+#   Jenkins:   Jenkinsfile (declarative)
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:   # 수동 트리거
+
+# 기본 권한 최소화 — 명시적으로 늘림
+permissions:
+  contents: read
+
+# 진행 중인 같은 브랜치 빌드 자동 취소 (PR 푸시 연속 시 자원 절약)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-typecheck:
+    name: Lint + Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.18"
+          enable-cache: true
+
+      - name: Install Python 3.12
+        run: uv python install 3.12
+
+      - name: Sync deps
+        run: uv sync --all-packages
+
+      - name: Ruff
+        run: uv run ruff check .
+
+      - name: Mypy (selected packages)
+        run: |
+          uv run mypy 04-fastapi-hello/src
+          uv run mypy 07-request-error-version/src
+          uv run mypy 14-shared-package/src
+          uv run mypy 15-mini-project/src
+
+  unit-tests:
+    name: Unit tests (도커 무관)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.18"
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync --all-packages
+      # 도커 안 쓰는 단계만 — 빠른 PR 검증
+      - name: pytest (unit only)
+        run: |
+          uv run pytest \
+            01-python-basics/tests \
+            02-package-structure/tests \
+            03-libraries-tour/tests \
+            04-fastapi-hello/tests \
+            06-async-deep/tests \
+            07-request-error-version/tests \
+            09-auth/tests \
+            14-shared-package/tests \
+            -v -m "not integration"
+
+  integration-tests:
+    name: Integration tests (testcontainers)
+    runs-on: ubuntu-latest
+    # 도커 GitHub Actions 러너 _내장_ — 자동 사용 가능
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.18"
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync --all-packages
+
+      - name: Integration / e2e tests
+        env:
+          # ryuk 은 GitHub Actions 환경에서 종종 문제 → 비활성
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+        run: |
+          uv run pytest \
+            08-testing/tests \
+            10-db-transaction/tests \
+            11-redis-ratelimit/tests \
+            12-service-comm-observability/tests \
+            13-kafka-queue/tests \
+            15-mini-project/tests \
+            -v

@@ -22,6 +22,18 @@ dependencies = [
     "kafka-queue",
     "fastapi-common",
     "tender",
+    "load-test",
+    "security-deep",
+    "db-deep",
+    "cache-mq-deep",
+    "realtime",
+    "file-io",
+    "gqlapi",
+    "tender-domain",
+    "obs-deep",
+    "typing-deep",
+    "perf-deep",
+    "i18n-app",
 ]
 
 # uv workspace 루트.
@@ -41,6 +53,18 @@ members = [
     "13-kafka-queue",
     "14-shared-package",
     "15-mini-project",
+    "A2-load-test",
+    "A5-security",
+    "A6-db-deep",
+    "A7-cache-mq-deep",
+    "A8-realtime",
+    "A9-file-io",
+    "A10-graphql",
+    "A11-ddd",
+    "A12-observability",
+    "A13-typing-deep",
+    "A14-perf",
+    "A1-i18n",
 ]
 
 # 위 dependencies 가 _PyPI 가 아니라 워크스페이스_ 에서 온다고 명시.
@@ -59,6 +83,18 @@ service-comm-observability = { workspace = true }
 kafka-queue = { workspace = true }
 fastapi-common = { workspace = true }
 tender = { workspace = true }
+load-test = { workspace = true }
+security-deep = { workspace = true }
+db-deep = { workspace = true }
+cache-mq-deep = { workspace = true }
+realtime = { workspace = true }
+file-io = { workspace = true }
+gqlapi = { workspace = true }
+tender-domain = { workspace = true }
+obs-deep = { workspace = true }
+typing-deep = { workspace = true }
+perf-deep = { workspace = true }
+i18n-app = { workspace = true }
 
 # 워크스페이스 전체에서 공통으로 쓰는 개발 의존성
 [dependency-groups]
@@ -100,6 +136,11 @@ module = [
     "arq.*",
     "purgatory",
     "purgatory.*",
+    "authlib.*",
+    "jsonschema",
+    "jsonschema.*",
+    "aiofiles",
+    "aiofiles.*",
 ]
 ignore_missing_imports = true
 
@@ -120,6 +161,17 @@ testpaths = [
     "13-kafka-queue/tests",
     "14-shared-package/tests",
     "15-mini-project/tests",
+    "A5-security/tests",
+    "A6-db-deep/tests",
+    "A7-cache-mq-deep/tests",
+    "A8-realtime/tests",
+    "A9-file-io/tests",
+    "A10-graphql/tests",
+    "A11-ddd/tests",
+    "A12-observability/tests",
+    "A13-typing-deep/tests",
+    "A14-perf/tests",
+    "A1-i18n/tests",
 ]
 markers = [
     "integration: testcontainers 가 필요한 통합 테스트 (도커 데몬 없으면 스킵)",

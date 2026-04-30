@@ -1,0 +1,16 @@
+# tender 앱 설정 — _비밀이 아닌_ 값만.
+# 비밀은 Secret 에 (vault/sops/IRSA 권장).
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tender-config
+  namespace: tender
+data:
+  APP_ENV: "prod"
+  # 컨테이너 _내부_ 호스트명 = K8s Service 이름
+  APP_DATABASE_URL: "postgresql+asyncpg://postgres:postgres@postgres:5432/learning"
+  APP_REDIS_URL: "redis://redis:6379"
+  APP_CACHE_TTL_SECONDS: "60"
+  APP_RATE_LIMIT_TIMES: "30"
+  APP_RATE_LIMIT_SECONDS: "60"

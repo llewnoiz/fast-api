@@ -1,0 +1,70 @@
+# Postgres — _상태 있는_ 워크로드 → StatefulSet
+#
+# 비교:
+#   docker-compose `db:` (volume 매핑) → K8s StatefulSet + PVC
+#   운영급:   AWS RDS, GCP Cloud SQL, Crunchy Postgres Operator
+#
+# 학습 의도: K8s _내부_ 에 띄우는 패턴 보여줌. 운영에선 _관리형 DB_ 권장.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: tender
+spec:
+  clusterIP: None        # headless — StatefulSet 의 안정적 DNS 이름
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: tender
+spec:
+  serviceName: postgres
+  replicas: 1            # 단일 — HA 는 별도 Operator 필요
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: postgres   # 운영은 Secret 으로
+            - name: POSTGRES_DB
+              value: learning
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata   # subdir 권장
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 1, memory: 1Gi }
+  volumeClaimTemplates:    # 자동 PVC — pod 별로 디스크 할당
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 5Gi

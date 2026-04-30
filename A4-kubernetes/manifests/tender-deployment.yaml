@@ -1,0 +1,125 @@
+# tender 앱 — Deployment + Service + HPA + Ingress
+#
+# 비교:
+#   docker-compose `app:` → Deployment (replicas 가능, rolling update)
+#   compose Healthcheck   → liveness / readiness probe
+#   compose `ports:`      → Service (ClusterIP) + Ingress
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tender
+  namespace: tender
+  labels:
+    app: tender
+spec:
+  selector:
+    app: tender
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tender
+  namespace: tender
+  labels:
+    app: tender
+spec:
+  replicas: 2
+  # rolling update — 한 번에 1개씩 교체
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: tender
+  template:
+    metadata:
+      labels:
+        app: tender
+    spec:
+      containers:
+        - name: tender
+          image: ghcr.io/myorg/fast-api/tender:latest   # CI 에서 push 한 이미지
+          ports:
+            - containerPort: 8000
+          # 비밀이 아닌 값 — ConfigMap
+          envFrom:
+            - configMapRef:
+                name: tender-config
+            - secretRef:
+                name: tender-secret
+          # 프로브 — 04 의 /healthz, /readyz 활용
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            # readyz 는 DB/Redis 까지 검사 (10 단계 떡밥) — 여기선 healthz 로
+            httpGet: { path: /healthz, port: 8000 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits:   { cpu: 1, memory: 512Mi }
+          # 보안: non-root + read-only rootfs
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+---
+# HPA — CPU 기반 자동 스케일링
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tender
+  namespace: tender
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tender
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+---
+# Ingress — 외부 트래픽 진입
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tender
+  namespace: tender
+  annotations:
+    # 운영: cert-manager 로 TLS 자동
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: tender.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tender
+                port:
+                  number: 80
+  # tls:
+  #   - hosts: [tender.example.com]
+  #     secretName: tender-tls

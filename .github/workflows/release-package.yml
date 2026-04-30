@@ -1,0 +1,59 @@
+# 14 fastapi-common 패키지 _태그 기반_ 자동 배포.
+#
+# 시나리오:
+#   git tag fastapi-common-v0.2.0
+#   git push --tags
+# → 이 워크플로가 wheel 빌드 + (사내 PyPI 또는 GitHub Releases) 배포.
+#
+# 비교:
+#   npm publish (CI):  태그 → npm publish
+#   Maven Central:     gpg 서명 + Sonatype Nexus
+
+name: Release fastapi-common
+
+on:
+  push:
+    tags:
+      - 'fastapi-common-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '버전 (예: 0.2.0)'
+        required: true
+
+permissions:
+  contents: write   # GitHub Releases 생성
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.18"
+
+      - run: uv python install 3.12
+
+      - name: Build wheel + sdist
+        working-directory: 14-shared-package
+        run: uv build
+
+      # 산출물 — 워크스페이스 루트 dist/
+      - name: List artifacts
+        run: ls -la dist/
+
+      # GitHub Releases 에 첨부 (사내 PyPI 가 없을 때 가장 단순)
+      - name: GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/fastapi_common-*
+
+      # 사내 PyPI 에 push 하려면:
+      # - name: Publish to internal PyPI
+      #   env:
+      #     UV_PUBLISH_URL: ${{ secrets.INTERNAL_PYPI_URL }}
+      #     UV_PUBLISH_TOKEN: ${{ secrets.INTERNAL_PYPI_TOKEN }}
+      #   run: uv publish dist/*

@@ -1,0 +1,60 @@
+# 로컬 개발용 docker compose
+#
+# 사용:
+#   make compose-up       # db + cache 만 띄우기 (앱은 host 에서 make run)
+#   docker compose --profile all up --build   # 앱까지 컨테이너로
+#   make compose-down
+
+services:
+  db:
+    image: postgres:16-alpine
+    profiles: [db, all]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - app-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  cache:
+    image: redis:7-alpine
+    profiles: [cache, all]
+    ports:
+      - "6379:6379"
+    volumes:
+      - app-cache-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: [all]
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    environment:
+      # 컨테이너 내부 — 호스트명이 _서비스명_ (db / cache)
+      APP_DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/app
+      APP_REDIS_URL: redis://cache:6379/0
+      APP_ENV: prod
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-change-me}
+    ports:
+      - "8000:8000"
+
+volumes:
+  app-db-data:
+  app-cache-data:

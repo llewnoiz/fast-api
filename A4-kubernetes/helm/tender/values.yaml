@@ -1,0 +1,53 @@
+# Helm 의 _기본값_. 환경별 override 는 values-prod.yaml 등으로.
+
+image:
+  repository: ghcr.io/myorg/fast-api/tender
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: true
+  className: nginx
+  host: tender.example.com
+  tlsSecretName: ""    # cert-manager 사용 시 채움
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 1
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+config:
+  env: prod
+  cacheTtlSeconds: 60
+  rateLimitTimes: 30
+  rateLimitSeconds: 60
+
+# Secret — 운영은 sealed-secrets / external-secrets 권장.
+# 학습용 평문 (절대 운영 금지)
+secrets:
+  jwtSecret: "change-me"
+
+# 인프라 — chart 에서 직접 띄울지, 외부에 의존할지
+postgres:
+  enabled: true     # false 면 외부 RDS 등
+  url: "postgresql+asyncpg://postgres:postgres@postgres:5432/learning"
+
+redis:
+  enabled: true
+  url: "redis://redis:6379"

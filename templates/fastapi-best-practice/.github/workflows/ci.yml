@@ -1,0 +1,78 @@
+# CI 파이프라인 — lint+typecheck / unit / integration 3-job.
+#
+# 트리거: push to main / PR
+# 비교: GitLab CI .gitlab-ci.yml, CircleCI .circleci/config.yml, Jenkins Jenkinsfile
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 같은 브랜치 빌드 _연속_ 푸시 시 이전 빌드 자동 취소
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-typecheck:
+    name: Lint + Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.18"
+          enable-cache: true
+
+      - name: Install Python 3.12
+        run: uv python install 3.12
+
+      - name: Sync deps
+        run: uv sync
+
+      - name: Ruff
+        run: uv run ruff check src tests
+
+      - name: Mypy
+        run: uv run mypy src
+
+  unit-tests:
+    name: Unit tests (도커 무관)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.18"
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync
+      - name: pytest (unit only)
+        run: uv run pytest tests/unit -v
+
+  integration-tests:
+    name: Integration tests (testcontainers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.18"
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync
+
+      - name: Integration tests
+        env:
+          # ryuk 은 GitHub Actions 환경에서 _가끔_ 문제 → 비활성
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+        run: uv run pytest tests/integration -v -m integration

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  labels:
+    {{- include "tender.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.config.env | quote }}
+  APP_DATABASE_URL: {{ .Values.postgres.url | quote }}
+  APP_REDIS_URL: {{ .Values.redis.url | quote }}
+  APP_CACHE_TTL_SECONDS: {{ .Values.config.cacheTtlSeconds | quote }}
+  APP_RATE_LIMIT_TIMES: {{ .Values.config.rateLimitTimes | quote }}
+  APP_RATE_LIMIT_SECONDS: {{ .Values.config.rateLimitSeconds | quote }}

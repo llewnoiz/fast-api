@@ -1,0 +1,21 @@
+[project]
+name = "file-io"
+version = "0.1.0"
+description = "A9 — 파일 업로드/다운로드 (multipart / Range / presigned / chunked upload)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "python-multipart>=0.0.18",   # multipart/form-data 파서 (FastAPI File 의존)
+    "aiofiles>=24.1",              # async 파일 IO
+    "structlog>=24.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fileio"]

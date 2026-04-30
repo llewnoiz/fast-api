@@ -4,6 +4,14 @@ Java/Spring·Go 백엔드 경험자가 FastAPI 베스트 프랙티스로 직접 
 
 전체 설계는 [`/.claude/plans/fast-api-python-tender-key.md`](file:///Users/hyunmin.song/.claude/plans/fast-api-python-tender-key.md) 참고.
 
+## 🚀 실무 시작 키트 — `templates/fastapi-best-practice/`
+
+본 학습 모노레포의 _운영급 패턴_ 만 추려 모은 **자체 완결 FastAPI 템플릿**. 새 프로젝트 시작 시 _이 디렉토리 통째로 복사_ 하면 됨.
+
+포함: FastAPI factory + Settings + JWT/RBAC + Postgres(SQLAlchemy 2.0 + Alembic) + Redis cache-aside + ApiEnvelope/에러 핸들러/correlation-id/구조화 로그 + 테스트(testcontainers) + Docker multi-stage + GitHub Actions. 39 tests, ruff/mypy clean.
+
+자세한 내용은 [`templates/fastapi-best-practice/README.md`](./templates/fastapi-best-practice/README.md) 참고.
+
 ## 사전 준비
 
 ```bash
@@ -38,7 +46,20 @@ docker info
 | 13 | [13-kafka-queue](./13-kafka-queue/) | aiokafka + arq 큐 + transactional outbox | ✅ 완료 |
 | 14 | [14-shared-package](./14-shared-package/) | 공통 모듈 패키징·팀 공유 (fastapi-common) | ✅ 완료 |
 | 15 | [15-mini-project](./15-mini-project/) | 🎓 통합 미니 tender 서비스 (04~14 결합) | ✅ **완료** |
-| A1 | A1-i18n | (부록) 다국어 처리 | ⚪ 선택 |
+| A1 | [A1-i18n](./A1-i18n/) | (부록) 다국어 처리 (Accept-Language / gettext / Pydantic / Babel) | ✅ 완료 |
+| A2 | [A2-load-test](./A2-load-test/) | (부록) 부하 테스트 (locust) | ✅ 완료 |
+| A3 | [A3-cicd](./A3-cicd/) + `.github/` | (부록) CI/CD (GitHub Actions + dependabot) | ✅ 완료 |
+| A4 | [A4-kubernetes](./A4-kubernetes/) | (부록) Kubernetes (raw manifests + Helm chart) | ✅ 완료 |
+| A5 | [A5-security](./A5-security/) | (부록) 보안 심화 (TOTP, API key, OAuth 3rd, OWASP, 시크릿) | ✅ 완료 |
+| A6 | [A6-db-deep](./A6-db-deep/) | (부록) DB 심화 (인덱스 / N+1 / jsonb / FTS / LISTEN-NOTIFY / Expand-Contract) | ✅ 완료 |
+| A7 | [A7-cache-mq-deep](./A7-cache-mq-deep/) | (부록) 캐시·MQ 심화 (stampede / Saga / CQRS / Event Sourcing / Schema Registry / DLQ) | ✅ 완료 |
+| A8 | [A8-realtime](./A8-realtime/) | (부록) WebSocket / SSE / Redis pub/sub fan-out (다중 인스턴스) | ✅ 완료 |
+| A9 | [A9-file-io](./A9-file-io/) | (부록) 파일 업로드/다운로드 (multipart / Range / presigned / chunked upload) | ✅ 완료 |
+| A10 | [A10-graphql](./A10-graphql/) | (부록) GraphQL (Strawberry) — Query/Mutation/DataLoader/N+1 회피 | ✅ 완료 |
+| A11 | [A11-ddd](./A11-ddd/) | (부록) DDD / 헥사고날 (Aggregate / VO / Domain Event / Ports & Adapters) | ✅ 완료 |
+| A12 | [A12-observability](./A12-observability/) | (부록) 관측가능성 운영급 (Sentry / 구조화 로그 / OTel / SLO / Grafana / Alertmanager) | ✅ 완료 |
+| A13 | [A13-typing-deep](./A13-typing-deep/) | (부록) Python 고급 typing & 메타프로그래밍 (PEP 695 / Protocol / Descriptor / Generator / Context Manager) | ✅ 완료 |
+| A14 | [A14-perf](./A14-perf/) | (부록) 성능 / 프로파일링 (cProfile / tracemalloc / async 함정 / 알고리즘 / 워커) | ✅ 완료 🎓 |
 
 ## 단계별 표준 산출물
 
