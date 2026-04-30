@@ -47,7 +47,7 @@ jobs:
 
       # 멀티 플랫폼 (linux/amd64 + linux/arm64) — Mac M1/M2 + 운영 amd64 동시
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: 05-infra-compose/Dockerfile
