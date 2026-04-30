@@ -37,7 +37,7 @@ jobs:
       # 메타데이터 자동 — branch / tag / sha 별 태그
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}/tender
           tags: |
