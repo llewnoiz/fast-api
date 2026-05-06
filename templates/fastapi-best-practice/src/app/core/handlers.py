@@ -13,8 +13,17 @@ from app.core.errors import DomainError, ErrorCode
 log = structlog.get_logger()
 
 
-def _to_response(envelope: ApiEnvelope[object], status_code: int) -> JSONResponse:
-    return JSONResponse(status_code=status_code, content=envelope.model_dump())
+def _to_response(
+    envelope: ApiEnvelope[object],
+    status_code: int,
+    *,
+    headers: object = None,  # Mapping[str, str] | None — JSONResponse 가 알아서 처리
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content=envelope.model_dump(),
+        headers=headers,  # type: ignore[arg-type]
+    )
 
 
 def install_exception_handlers(app: FastAPI) -> None:
@@ -42,6 +51,7 @@ def install_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     async def _http(_req: Request, exc: HTTPException) -> JSONResponse:
         msg = exc.detail if isinstance(exc.detail, str) else "http error"
+        # HTTPException.headers 보존 — Retry-After (429) / WWW-Authenticate (401) 등
         return _to_response(
             ApiEnvelope[object](
                 code=f"HTTP_{exc.status_code}",
@@ -49,6 +59,7 @@ def install_exception_handlers(app: FastAPI) -> None:
                 data=exc.detail if not isinstance(exc.detail, str) else None,
             ),
             status_code=exc.status_code,
+            headers=exc.headers,
         )
 
     @app.exception_handler(Exception)

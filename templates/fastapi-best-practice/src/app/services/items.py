@@ -2,6 +2,8 @@
 
 owner 가드 = IDOR (CWE-639) 방어 ── _모든_ 단일 조회/수정/삭제에서 호출 필수.
 BaseRepo[T] 의 `get_or_404` 가 NotFound 자동 처리.
+
+Layered 구조라 _다른 service / repository_ 자유 사용 가능 (예: cross-domain 응답).
 """
 
 from __future__ import annotations
@@ -11,7 +13,7 @@ from app.core.errors import ItemAccessDeniedError
 from app.db.models import Item, User
 from app.db.repository_base import Page
 from app.db.uow import UnitOfWork
-from app.domain.items.schemas import ItemCreate, ItemPublic, ItemUpdate
+from app.schemas.items import ItemCreate, ItemPublic, ItemUpdate
 
 
 def _to_dict(item: Item) -> dict:
@@ -30,7 +32,6 @@ async def create_item(
         item = await uow.items.add(
             owner_id=owner.id, title=payload.title, description=payload.description
         )
-    # commit 후 _목록 캐시 무효화_
     await cache.invalidate_user_items(owner.id)
     return item
 

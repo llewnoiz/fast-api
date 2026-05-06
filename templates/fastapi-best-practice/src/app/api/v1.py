@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.domain.items.router import router as items_router
-from app.domain.users.router import auth_router, me_router, users_router
+from app.routers.auth import router as auth_router
+from app.routers.items import router as items_router
+from app.routers.me import router as me_router
+from app.routers.users import router as users_router
 
 router = APIRouter(prefix="/api/v1")
 router.include_router(users_router)

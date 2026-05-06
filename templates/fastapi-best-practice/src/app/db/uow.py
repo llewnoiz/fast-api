@@ -12,8 +12,8 @@ from types import TracebackType
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.domain.items.repository import ItemRepo
-from app.domain.users.repository import UserRepo
+from app.db.repositories.items import ItemRepo
+from app.db.repositories.users import UserRepo
 
 
 class UnitOfWork:

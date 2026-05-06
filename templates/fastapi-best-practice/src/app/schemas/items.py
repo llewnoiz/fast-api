@@ -1,10 +1,15 @@
-"""Item 도메인 스키마."""
+"""Item 도메인 스키마.
+
+Layered 구조 ── User schema cross-import 자유 (한 방향: items → users).
+"""
 
 from __future__ import annotations
 
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.schemas.users import OwnerSummary
 
 
 class ItemCreate(BaseModel):
@@ -28,3 +33,12 @@ class ItemPublic(BaseModel):
     description: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class ItemDetail(ItemPublic):
+    """ItemPublic + owner 정보 포함 — `GET /items/{id}/detail` 같은 풍부 응답.
+
+    cross-domain 사용 예. Layered 구조라 schema cross-import 자유.
+    """
+
+    owner: OwnerSummary

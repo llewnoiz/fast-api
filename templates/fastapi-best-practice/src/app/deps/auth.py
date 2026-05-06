@@ -14,8 +14,8 @@ from fastapi.security import OAuth2PasswordBearer
 from app.core.errors import AuthError, ForbiddenError
 from app.core.security import decode_token
 from app.db.models import User
+from app.db.repositories.users import UserRepo
 from app.db.uow import UnitOfWork
-from app.domain.users.repository import UserRepo
 
 # `tokenUrl` 은 _실제 라우트 prefix_ 와 일치해야 Swagger UI Authorize 동작
 _oauth = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")

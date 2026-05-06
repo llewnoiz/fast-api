@@ -7,6 +7,11 @@
 #   docker run -p 8000:8000 -e APP_DATABASE_URL=... app:dev
 # 또는 compose:
 #   docker compose --profile all up --build
+#
+# 운영 추가 권장 (본 Dockerfile 범위 밖):
+#   - distroless / chainguard 이미지 (`gcr.io/distroless/python3-debian12`) — 공격 표면 ↓
+#   - Trivy / Grype 같은 _보안 스캔_ CI 통합
+#   - SBOM 생성 (`docker buildx build --sbom=true`)
 # ============================================================================
 
 # ---------- builder ----------
@@ -33,6 +38,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ---------- runner — 가벼운 Python ----------
 FROM python:3.12-slim-bookworm AS runner
 
+# OS 보안 패치 — 빌드 시점 최신. 운영은 _주기적 재빌드_ 로 패치 보장.
+# `--no-install-recommends` — 기본 추천 패키지 _제외_, 이미지 크기 ↓ 공격 표면 ↓.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # 보안: non-root 사용자
 RUN groupadd --system --gid 1000 app && \
     useradd  --system --uid 1000 --gid app --create-home --shell /bin/bash app
@@ -46,15 +58,16 @@ COPY --from=builder /build/alembic.ini /app/alembic.ini
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONPATH="/app/src"
+    PYTHONPATH="/app/src" \
+    APP_ENV=prod
 
 USER app
 WORKDIR /app
 
 EXPOSE 8000
 
-# 헬스체크 — 컨테이너 자체 동작 검증
+# 헬스체크 — 컨테이너 자체 동작 검증 (curl 사용 — Python 임포트 비용 없음)
 HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz', timeout=2).status==200 else 1)"
+    CMD curl --fail --silent --max-time 2 http://localhost:8000/healthz || exit 1
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

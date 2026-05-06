@@ -1,7 +1,7 @@
 [project]
 name = "app"
-version = "0.1.0"
-description = "FastAPI best-practice starter template (Mid — Postgres + Redis + JWT + Docker)"
+version = "0.3.0"
+description = "FastAPI best-practice starter (Postgres + Redis + JWT/refresh + Rate limit + Security headers + Docker)"
 requires-python = ">=3.12"
 readme = "README.md"
 license = { text = "MIT" }

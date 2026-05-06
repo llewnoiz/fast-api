@@ -15,7 +15,7 @@ from app.core.errors import (
 from app.core.security import hash_password, verify_password
 from app.db.models import User
 from app.db.uow import UnitOfWork
-from app.domain.users.schemas import UserCreate
+from app.schemas.users import UserCreate
 
 
 async def signup(uow: UnitOfWork, payload: UserCreate) -> User:
