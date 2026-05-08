@@ -10,9 +10,9 @@ from __future__ import annotations
 
 from app.cache.client import ItemCache
 from app.core.errors import ItemAccessDeniedError
-from app.db.models import Item, User
-from app.db.repository_base import Page
 from app.db.uow import UnitOfWork
+from app.models import Item, User
+from app.repositories._base import Page
 from app.schemas.items import ItemCreate, ItemPublic, ItemUpdate
 
 

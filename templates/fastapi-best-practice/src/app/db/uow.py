@@ -12,13 +12,13 @@ from types import TracebackType
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.db.repositories.items import ItemRepo
-from app.db.repositories.users import UserRepo
+from app.repositories.items_repository import ItemRepository
+from app.repositories.users_repository import UserRepository
 
 
 class UnitOfWork:
-    users: UserRepo
-    items: ItemRepo
+    users: UserRepository
+    items: ItemRepository
 
     def __init__(self, sm: async_sessionmaker[AsyncSession]) -> None:
         self._sm = sm
@@ -27,8 +27,8 @@ class UnitOfWork:
     async def __aenter__(self) -> UnitOfWork:
         self._session = self._sm()
         await self._session.begin()
-        self.users = UserRepo(self._session)
-        self.items = ItemRepo(self._session)
+        self.users = UserRepository(self._session)
+        self.items = ItemRepository(self._session)
         return self
 
     async def __aexit__(

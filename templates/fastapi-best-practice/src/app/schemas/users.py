@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field
+
+from app.schemas._base import BaseSchema
 
 
 class UserCreate(BaseModel):
@@ -13,10 +15,8 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=8, max_length=100)
 
 
-class UserPublic(BaseModel):
+class UserPublic(BaseSchema):
     """`from_attributes=True` ── ORM 객체에서 자동 변환 (`.model_validate(user)`)."""
-
-    model_config = ConfigDict(from_attributes=True)
 
     id: int
     email: EmailStr
@@ -26,10 +26,8 @@ class UserPublic(BaseModel):
     created_at: datetime
 
 
-class OwnerSummary(BaseModel):
+class OwnerSummary(BaseSchema):
     """가벼운 owner 정보 — Item 응답에 포함될 때 (전체 UserPublic 보단 _최소_)."""
-
-    model_config = ConfigDict(from_attributes=True)
 
     id: int
     username: str

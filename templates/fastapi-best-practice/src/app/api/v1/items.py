@@ -10,12 +10,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request, status
 
 from app.core.envelope import ApiEnvelope, success
-from app.db.models import User
-from app.db.repository_base import PageResponse
 from app.db.uow import UnitOfWork
 from app.deps.auth import get_current_user, get_uow
+from app.models import User
+from app.repositories._base import PageResponse
 from app.schemas.items import ItemCreate, ItemDetail, ItemPublic, ItemUpdate
-from app.services import items as item_service
+from app.services import items_service as item_service
 
 router = APIRouter(prefix="/items", tags=["items"])
 

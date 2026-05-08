@@ -1,6 +1,6 @@
 """Declarative Base — alembic env.py 가 깔끔하게 import.
 
-`from app.db.base import Base; import app.db.models` 로 모든 모델 등록.
+`from app.db.base import Base; import app.models` 로 모든 모델 메타데이터 등록.
 """
 
 from __future__ import annotations

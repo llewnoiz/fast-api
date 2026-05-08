@@ -5,11 +5,11 @@ from __future__ import annotations
 from sqlalchemy import select
 
 from app.core.errors import UserNotFoundError
-from app.db.models import User
-from app.db.repository_base import BaseRepo
+from app.models import User
+from app.repositories._base import BaseRepo
 
 
-class UserRepo(BaseRepo[User]):
+class UserRepository(BaseRepo[User]):
     model = User
     not_found_error = UserNotFoundError
 

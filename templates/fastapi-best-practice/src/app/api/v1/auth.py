@@ -17,7 +17,6 @@ from redis.asyncio import Redis
 
 from app.core.envelope import ApiEnvelope, success
 from app.core.errors import AuthError
-from app.core.ratelimit import RateLimiter
 from app.core.refresh_store import (
     add_jti,
     is_valid,
@@ -30,15 +29,16 @@ from app.core.security import (
     decode_refresh_token,
 )
 from app.core.settings import Settings
-from app.db.models import User
 from app.db.uow import UnitOfWork
 from app.deps.auth import get_current_user, get_uow
+from app.middleware.throttling import RateLimiter
+from app.models import User
 from app.schemas.users import (
     LoginRequest,
     RefreshRequest,
     TokenResponse,
 )
-from app.services import users as user_service
+from app.services import users_service as user_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

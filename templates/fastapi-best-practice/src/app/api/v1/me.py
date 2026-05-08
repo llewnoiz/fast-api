@@ -7,8 +7,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.core.envelope import ApiEnvelope, success
-from app.db.models import User
 from app.deps.auth import get_current_user
+from app.models import User
 from app.schemas.users import UserPublic
 
 router = APIRouter(tags=["users"])

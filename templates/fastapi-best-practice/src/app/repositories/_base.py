@@ -4,15 +4,15 @@
     - **PEP 695 generic** (`class BaseRepo[T: Base]`) ── 타입 안전 + 보일러플레이트 ↓
     - **선언적 model** ── 자식이 `model = User` 한 줄로 바인딩
     - **선언적 not_found_error** ── 도메인 특화 예외 (`UserNotFoundError`) 매핑
-    - 도메인 _특화_ 쿼리는 자식 Repo 에 (예: `UserRepo.get_by_email`)
+    - 도메인 _특화_ 쿼리는 자식 Repo 에 (예: `UserRepository.get_by_email`)
     - 80% 의 단순 CRUD 는 _베이스_ 가 처리 → 새 도메인 추가가 5 줄
 
 새 도메인 Repo 작성 흐름:
-    1. `db/models.py` 에 모델 추가
-    2. `core/errors.py` 에 `XxxNotFoundError` 추가 (선택 — `NotFoundError` 그대로 써도 OK)
-    3. `domain/xxx/repository.py`:
+    1. `models/{name}.py` 에 모델 추가
+    2. `core/errors.py` 에 `XxxNotFoundError` 추가 (선택 — `NotFoundError` 그대로 OK)
+    3. `repositories/{name}_repository.py`:
        ```python
-       class XxxRepo(BaseRepo[Xxx]):
+       class XxxRepository(BaseRepo[Xxx]):
            model = Xxx
            not_found_error = XxxNotFoundError
            # 도메인 특화 쿼리만 여기
@@ -21,6 +21,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -65,7 +66,7 @@ class PageResponse[T](BaseModel):
 
     @classmethod
     def from_page[U](
-        cls, page: Page[U], *, transform: Callable[[U], T]  # noqa: F821
+        cls, page: Page[U], *, transform: Callable[[U], T]
     ) -> PageResponse[T]:
         """`Page[OrmModel]` → `PageResponse[Pydantic]` 변환 헬퍼."""
         return cls(
@@ -75,9 +76,6 @@ class PageResponse[T](BaseModel):
             offset=page.offset,
             has_next=page.has_next,
         )
-
-
-from collections.abc import Callable  # noqa: E402, I001 — forward ref
 
 
 class BaseRepo[T: Base]:

@@ -13,8 +13,8 @@ from app.core.errors import (
     UsernameAlreadyExistsError,
 )
 from app.core.security import hash_password, verify_password
-from app.db.models import User
 from app.db.uow import UnitOfWork
+from app.models import User
 from app.schemas.users import UserCreate
 
 

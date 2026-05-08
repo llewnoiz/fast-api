@@ -10,7 +10,7 @@ from app.core.envelope import ApiEnvelope, success
 from app.db.uow import UnitOfWork
 from app.deps.auth import get_uow
 from app.schemas.users import UserCreate, UserPublic
-from app.services import users as user_service
+from app.services import users_service as user_service
 
 router = APIRouter(prefix="/users", tags=["users"])
 

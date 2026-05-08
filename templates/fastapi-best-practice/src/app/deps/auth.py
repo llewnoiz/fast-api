@@ -13,9 +13,9 @@ from fastapi.security import OAuth2PasswordBearer
 
 from app.core.errors import AuthError, ForbiddenError
 from app.core.security import decode_token
-from app.db.models import User
-from app.db.repositories.users import UserRepo
 from app.db.uow import UnitOfWork
+from app.models import User
+from app.repositories.users_repository import UserRepository
 
 # `tokenUrl` 은 _실제 라우트 prefix_ 와 일치해야 Swagger UI Authorize 동작
 _oauth = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -38,7 +38,7 @@ async def get_current_user(
 
     sm = request.app.state.sessionmaker
     async with sm() as session:
-        repo = UserRepo(session)
+        repo = UserRepository(session)
         user = await repo.get_by_username(username)
     if user is None or not user.is_active:
         raise AuthError("user not found or disabled")

@@ -11,8 +11,9 @@ lifespan 에서 _하나_ 의 인스턴스로:
     3. CorrelationIdMiddleware (요청 ID + structlog 컨텍스트)
     4. (Rate limit 은 dependency 로 — 미들웨어 X)
 
-`/readyz` 는 DB / Redis 의존성까지 확인 (K8s readiness probe 용).
-`/healthz` 는 _프로세스 살아있음_ 만 (Docker HEALTHCHECK / liveness probe).
+라우터:
+    - `app.api.v1.router` — `/api/v1/*` 도메인 라우터 통합
+    - `app.api.health` — `/healthz` (liveness) + `/readyz` (readiness)
 """
 
 from __future__ import annotations
@@ -21,19 +22,19 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
-from sqlalchemy import text
 
-from app.api.v1 import router as v1_router
+from app.api.health import router as health_router
+from app.api.v1.router import router as v1_router
 from app.cache.client import ItemCache
-from app.core.correlation import install_correlation_middleware
-from app.core.handlers import install_exception_handlers
 from app.core.logging import configure_logging
-from app.core.security_headers import install_security_headers
 from app.core.settings import get_settings
 from app.db.session import make_engine, make_sessionmaker
+from app.middleware.correlation import install_correlation_middleware
+from app.middleware.handlers import install_exception_handlers
+from app.middleware.security_headers import install_security_headers
 
 
 @asynccontextmanager
@@ -71,7 +72,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title="app",
-        version="0.1.0",
+        version="0.4.0",
         description="FastAPI best-practice starter",
         lifespan=lifespan,
     )
@@ -93,34 +94,7 @@ def create_app() -> FastAPI:
     install_exception_handlers(app)
 
     app.include_router(v1_router)
-
-    # ── 헬스 / 레디 ─────────────────────────────────────────────
-    @app.get("/healthz", tags=["meta"], include_in_schema=False)
-    async def healthz() -> dict[str, str]:
-        """Liveness probe — _프로세스 살아있음_ 만 검사. envelope 미적용."""
-        return {"status": "ok"}
-
-    @app.get("/readyz", tags=["meta"], include_in_schema=False)
-    async def readyz(request: Request) -> dict[str, str]:
-        """Readiness probe — DB / Redis 가 _응답 가능_ 한지. K8s readiness probe 용.
-
-        _하나라도 실패_ 하면 503 → 트래픽 라우팅 _제외_. 대용량 부하 시 _circuit breaker_ 효과.
-        """
-        sm = request.app.state.sessionmaker
-        redis: Redis = request.app.state.redis
-
-        try:
-            async with sm() as session:
-                await session.execute(text("SELECT 1"))
-            ping_result = redis.ping()
-            if hasattr(ping_result, "__await__"):
-                await ping_result
-        except Exception as e:  # noqa: BLE001
-            from fastapi import HTTPException  # noqa: PLC0415
-
-            raise HTTPException(status_code=503, detail=f"not ready: {e!r}") from e
-
-        return {"status": "ready"}
+    app.include_router(health_router)
 
     return app
 

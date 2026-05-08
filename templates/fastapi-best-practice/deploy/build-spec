@@ -1,0 +1,21 @@
+# build-spec — CI/CD 빌드 명세 placeholder.
+#
+# 실제 내용은 _사용자의 CI/CD 환경_ 에 따라 변경. 컨벤션만 안내:
+#
+# - AWS CodeBuild       → `buildspec.yml`
+# - Google Cloud Build  → `cloudbuild.yaml`
+# - Tekton              → `pipelinerun.yaml`
+# - Argo Workflows      → `workflow.yaml`
+# - Jenkins             → `Jenkinsfile`
+#
+# 본 템플릿은 GitHub Actions (`.github/workflows/{ci,docker}.yml`) 가 _기본_.
+# 회사 내부 CI/CD 로 전환 시 이 파일에 spec 작성 + GH Actions 비활성화.
+#
+# 표준 단계 (참고):
+#   1. lint + typecheck + unit test    (`uv run ruff check && uv run mypy && uv run pytest tests/unit`)
+#   2. integration test (testcontainers Postgres + Redis)
+#   3. docker build (multi-arch amd64+arm64)
+#   4. SBOM 생성 (`docker buildx build --sbom=true --provenance=true`)
+#   5. 보안 스캔 (Trivy / Grype)
+#   6. 레지스트리 push (태그: branch / commit-sha / semver)
+#   7. (옵션) deploy hook (Argo CD / Helm / kubectl set image)

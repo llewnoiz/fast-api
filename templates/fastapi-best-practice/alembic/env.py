@@ -1,4 +1,4 @@
-"""Alembic env — `app.db.models` 의 모든 모델을 metadata 에 등록.
+"""Alembic env — `app.models` 의 모든 모델을 metadata 에 등록.
 
 운영 환경:
     `ALEMBIC_DATABASE_URL=postgresql+psycopg://user:pass@host:5432/db alembic upgrade head`
@@ -14,8 +14,8 @@ from sqlalchemy import engine_from_config, pool
 
 from app.db.base import Base
 
-# 모든 모델을 _import_ 해야 metadata 에 등록됨
-import app.db.models  # noqa: F401
+# 모든 모델을 _import_ 해야 metadata 에 등록됨 (models/__init__.py 가 re-export)
+import app.models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

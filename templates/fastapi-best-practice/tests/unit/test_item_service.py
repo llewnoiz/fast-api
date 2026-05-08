@@ -9,9 +9,9 @@ from typing import Any
 import pytest
 
 from app.core.errors import ItemAccessDeniedError, ItemNotFoundError
-from app.db.repository_base import Page
+from app.repositories._base import Page
 from app.schemas.items import ItemCreate, ItemUpdate
-from app.services import items as service
+from app.services import items_service as service
 
 
 @dataclass

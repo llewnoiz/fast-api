@@ -17,7 +17,7 @@ from app.core.errors import (
 )
 from app.core.security import hash_password
 from app.schemas.users import UserCreate
-from app.services import users as service
+from app.services import users_service as service
 
 
 @dataclass

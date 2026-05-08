@@ -5,6 +5,56 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-07
+
+### Changed — Production BFF 구조 정렬 (breaking change)
+
+사용자가 _실제 운영 중_ 인 BFF 프로젝트 트리 (`svc-etprs-bff-fastapi`) 를 보여주며
+"레이어드 구조를 이걸 참고 해서 변경" 요청. _이론적_ Layered (0.3.0) 는 자체 일관이지만
+_현장 컨벤션_ 과 시각 차이가 큼. 템플릿이 _쓸 수 있는_ 시작점이 되려면 현장 트리와 _일치_ 해야.
+
+**구조 변경 요약**:
+
+| Before (0.3.0) | After (0.4.0) | 비고 |
+|---|---|---|
+| `api/v1.py` 단일 파일 | `api/v1/{users,auth,me,items,router}.py` 폴더 | feature 별 분리 + `router.py` 통합 |
+| `main.py` 인라인 `/healthz`, `/readyz` | `api/health.py` | 라우터 분리 |
+| `db/models.py` | `models/{users,items}.py` + `__init__.py` re-export | 도메인별 split |
+| `db/repositories/{users,items}.py` (`UserRepo`/`ItemRepo`) | `repositories/{users,items}_repository.py` (`UserRepository`/`ItemRepository`) | flat layout + `_repository` suffix + 클래스명 |
+| `db/repository_base.py` | `repositories/_base.py` | underscore prefix |
+| `services/{users,items}.py` | `services/{users,items}_service.py` | `_service` suffix |
+| `core/{correlation,handlers,security_headers,ratelimit}.py` | `middleware/{correlation,handlers,security_headers,throttling}.py` | 미들웨어성 코드 분리. `ratelimit` → `throttling` 모듈명 |
+| `routers/` 폴더 | _삭제_ | `api/v1/` 가 대체 |
+
+### Added
+- **`__main__.py`** — `python -m app` 실행 엔트리 (BFF 컨벤션, IDE Run + 로컬 디버깅 + Docker CMD 통합)
+- **`schemas/_base.py`** — `BaseSchema(BaseModel)` 공통 베이스 (`ConfigDict(from_attributes=True)`). `UserPublic`, `OwnerSummary`, `ItemPublic`, `ItemDetail` 가 상속
+- **`clients/external/`, `clients/kafka/`, `ws/`** — 빈 placeholder 폴더 + docstring (성장 시 외부 통신 / WebSocket 자리)
+- **`deploy/Dockerfile`, `deploy/run.sh`, `deploy/build-spec`** — 운영 배포 컨벤션 자리. 루트 Dockerfile 도 _유지_ (개발/CI 동일)
+- `models/__init__.py` re-export — `from app.models import User, Item` 가능. alembic env.py 가 한 줄로 메타데이터 로드
+
+### Migration guide (fork 한 사용자)
+import 경로 변경 (sed 자동화 가능):
+- `from app.db.models import` → `from app.models import`
+- `from app.db.repositories.users import UserRepo` → `from app.repositories.users_repository import UserRepository`
+- `from app.db.repositories.items import ItemRepo` → `from app.repositories.items_repository import ItemRepository`
+- `from app.db.repository_base import` → `from app.repositories._base import`
+- `from app.services import users as` → `from app.services import users_service as`
+- `from app.services import items as` → `from app.services import items_service as`
+- `from app.core.correlation import` → `from app.middleware.correlation import`
+- `from app.core.handlers import` → `from app.middleware.handlers import`
+- `from app.core.security_headers import` → `from app.middleware.security_headers import`
+- `from app.core.ratelimit import` → `from app.middleware.throttling import`
+- `from app.routers.{users,auth,me,items} import` → `from app.api.v1.{users,auth,me,items} import`
+- `from app.api.v1 import router as v1_router` → `from app.api.v1.router import router as v1_router`
+
+클래스명 (호출처):
+- `UserRepo(...)` → `UserRepository(...)`
+- `ItemRepo(...)` → `ItemRepository(...)`
+
+alembic:
+- `import app.db.models` → `import app.models`
+
 ## [0.3.0] - 2026-05-06
 
 ### Changed — Layered 구조 refactor (시니어 review 반영, breaking change)

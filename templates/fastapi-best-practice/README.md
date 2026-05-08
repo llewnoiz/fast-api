@@ -49,51 +49,91 @@ make all        # ruff + mypy + test
 - i18n → `A1-i18n/`
 - 캐시 stampede / Saga → `A7-cache-mq-deep/`
 
-## 디렉토리 구조 (Layered)
+## 디렉토리 구조 (Production BFF)
 
 ```
 src/app/
-├── main.py                  create_app() factory + lifespan + /healthz + /readyz
-├── core/                    인프라 공통
+├── __init__.py
+├── __main__.py                `python -m app` 실행 엔트리
+├── main.py                    create_app() factory + lifespan
+├── api/
+│   ├── health.py              GET /healthz, /readyz
+│   └── v1/
+│       ├── router.py          APIRouter(prefix="/api/v1") + feature 라우터 통합
+│       ├── users.py           POST /users (signup)
+│       ├── auth.py            POST /auth/{login, refresh, logout, logout-all}
+│       ├── me.py              GET /me
+│       └── items.py           items CRUD + /items/{id}/detail (cross-domain)
+├── core/                      인프라 _순수_ (부수효과 없음)
 │   ├── settings.py
-│   ├── envelope.py / errors.py / handlers.py
-│   ├── correlation.py / logging.py
+│   ├── envelope.py / errors.py
+│   ├── logging.py
 │   ├── security.py / refresh_store.py
-│   ├── security_headers.py
-│   └── ratelimit.py
-├── db/                      _데이터 layer 공유_ (cross-import 자유)
-│   ├── base.py              DeclarativeBase
-│   ├── session.py           engine + sessionmaker
-│   ├── models.py            User + Item (한 파일 — 5+ 모델 되면 폴더 split)
-│   ├── repository_base.py   BaseRepo[T] + Page + PageResponse
-│   ├── repositories/
-│   │   ├── users.py         UserRepo
-│   │   └── items.py         ItemRepo (cross-join: get_with_owner)
+│   └── (그 외 순수 함수 / 클래스)
+├── middleware/                request/response 변형 (부수효과)
+│   ├── correlation.py         X-Request-ID + structlog 컨텍스트
+│   ├── handlers.py            DomainError / Validation / HTTPException → envelope
+│   ├── security_headers.py    HSTS / CSP / X-Frame-Options 등
+│   └── throttling.py          RateLimiter (Redis fixed-window)
+├── models/                    SQLAlchemy ORM
+│   ├── __init__.py            re-export: User, Item (alembic 한 줄 import)
+│   ├── users.py
+│   └── items.py
+├── repositories/              flat layout — 클래스/모듈 둘 다 `_repository` suffix
+│   ├── _base.py               BaseRepo[T] + Page + PageResponse
+│   ├── users_repository.py    UserRepository
+│   └── items_repository.py    ItemRepository (cross-join: get_with_owner)
+├── schemas/                   Pydantic — cross-import 한 방향 (items → users)
+│   ├── _base.py               BaseSchema(BaseModel) — from_attributes=True
+│   ├── users.py               UserCreate / UserPublic / OwnerSummary / Login / Token
+│   └── items.py               ItemCreate / ItemUpdate / ItemPublic / ItemDetail
+├── services/                  얇은 layer — UoW + 도메인 호출 + cache invalidate
+│   ├── users_service.py       signup / authenticate
+│   └── items_service.py       create / get / list / update / delete + owner 가드
+├── db/                        순수 인프라 (engine / session / uow / DeclarativeBase)
+│   ├── base.py
+│   ├── session.py
 │   └── uow.py
-├── schemas/                 Pydantic — cross-import 한 방향 (items → users)
-│   ├── users.py             UserCreate / UserPublic / OwnerSummary / Login / Token
-│   └── items.py             ItemCreate / ItemUpdate / ItemPublic / ItemDetail (with owner)
-├── cache/client.py          ItemCache (cache-aside)
-├── deps/auth.py             get_current_user / require_role / get_uow
-├── services/                얇은 layer — UoW 시작 + 도메인 호출 + cache invalidate
-│   ├── users.py             signup / authenticate
-│   └── items.py             create / get / list / update / delete + owner 가드
-├── routers/                 FastAPI routers
-│   ├── users.py             POST /users (signup)
-│   ├── auth.py              POST /auth/{login, refresh, logout, logout-all}
-│   ├── me.py                GET /me
-│   └── items.py             items CRUD + /items/{id}/detail (cross-domain)
-└── api/v1.py                APIRouter(prefix="/api/v1") + 4 router include
+├── cache/client.py            ItemCache (cache-aside)
+├── deps/auth.py               get_current_user / require_role / get_uow
+├── clients/                   외부 통신 자리 (성장 시)
+│   ├── external/              REST API 클라이언트 (httpx 기반)
+│   └── kafka/                 Kafka producer / consumer
+└── ws/                        WebSocket endpoints 자리
 
-alembic/                     마이그레이션
+deploy/                        운영 배포 컨벤션 자리
+├── Dockerfile                 운영용 이미지 (루트 Dockerfile 과 동일 — 변경 시 분기)
+├── run.sh                     uvicorn (proxy headers + workers)
+└── build-spec                 CI/CD 빌드 명세 placeholder
+
+alembic/                       마이그레이션
 tests/
-├── unit/                    DB 없는 순수 로직 (security / schemas / envelope / services)
-└── integration/             testcontainers Postgres + Redis (e2e)
+├── unit/                      DB 없는 순수 로직 (security / schemas / envelope / services)
+└── integration/               testcontainers Postgres + Redis (e2e)
 ```
 
-> **왜 Layered?** 본 템플릿은 _단일 서비스_ (모놀리식). 도메인 폴더 분리는 _격리_ 보단
-> _import 부담_ 만 만든다. repository 끼리 _서로 조인 자유_ + schemas cross-import 자유.
-> 진짜 bounded context (마이크로서비스) 결정 시 _그때_ 재구조화. 0.3.0 의 핵심 변경.
+> **왜 이 구조?** 사용자가 _실제 운영 중_ 인 BFF 트리 (`svc-etprs-bff-fastapi`) 에 맞춤.
+> 0.3.0 Layered 가 _이론적_ 으론 OK 였지만 _현장 컨벤션_ 과 시각 차이 큼. 0.4.0 부터 일치.
+> repository 끼리 _서로 조인 자유_ + schemas cross-import 자유 (Layered 의 가치 유지).
+> 진짜 bounded context (마이크로서비스) 결정 시 _그때_ 재구조화.
+
+### BFF 구조 노트 — 빈 자리 placeholder
+
+`clients/external/`, `clients/kafka/`, `ws/` 는 _현재 비어 있음_. 이유:
+
+- **`clients/external/`** — 외부 REST API 클라이언트 자리. httpx.AsyncClient 기반.
+  사용 시점: 결제 / 알림 / 추천 등 _다른 서비스_ 호출. 한 외부 의존성 = 한 파일
+  (`payments_client.py`). 본 템플릿엔 stub 만 (실제 외부 의존성 없음).
+- **`clients/kafka/`** — Kafka producer / consumer 자리. 사용 시점: 이벤트 발행 (outbox pattern)
+  / 비동기 워커. 학습 자료 `13-kafka-queue/` + `15-mini-project/.../OutboxEvent` 참고.
+- **`ws/`** — WebSocket endpoints 자리. 사용 시점: 실시간 채팅 / 알림 / 라이브 업데이트.
+  학습 자료 `A8-realtime/` 참고.
+- **`deploy/`** — Dockerfile + run.sh + build-spec 자리. _운영_ 빌드/실행 명세 분리.
+  루트 `Dockerfile` 이 _개발/CI 동일_ 정본, `deploy/Dockerfile` 이 _운영_ 분기.
+  CI/CD 환경 별 `build-spec` (CodeBuild buildspec.yml / cloudbuild.yaml 등) 작성.
+
+_빈 자리_ 라도 폴더가 있어야 _성장 시 자연스러운 위치_ 가 보임. 새 의존성 생기면
+"어디 둬야 하지" 고민 없이 바로 추가.
 
 ## API 엔드포인트
 
@@ -123,9 +163,9 @@ tests/
 { "code": "NOT_FOUND", "message": "item not found", "data": null }
 ```
 
-## Rename guide — fork 후 _4가지 토큰_ 검색-치환
+## Rename guide — fork 후 _5가지 토큰_ 검색-치환
 
-다른 프로젝트로 시작할 때 이 4개를 자기 이름으로:
+다른 프로젝트로 시작할 때 이 5개를 자기 이름으로:
 
 | # | 위치 | 변경 전 | 변경 후 (예) |
 |---|---|---|---|
@@ -133,6 +173,7 @@ tests/
 | 2 | `pyproject.toml` `[tool.hatch.build.targets.wheel] packages` + 디렉토리 `src/app/` | `app` | `myapi` |
 | 3 | `src/app/core/settings.py` `env_prefix` + `.env.example` 의 `APP_*` | `APP_` | `MYAPI_` |
 | 4 | `src/app/main.py` FastAPI `title="app"` | `app` | `MyAPI` |
+| 5 | `Dockerfile`, `deploy/Dockerfile`, `deploy/run.sh` 의 `app.main:app` / `PYTHONPATH` | `app` | `myapi` |
 
 전체 치환 도우미 (sed):
 
@@ -167,7 +208,7 @@ make all  # 전부 통과해야
 본 템플릿은 _도메인별 Repository 분리_ 와 _공통 CRUD 추상화_ 를 _둘 다_ 가짐:
 
 ```python
-# db/repository_base.py — 공통
+# repositories/_base.py — 공통
 class BaseRepo[T: Base]:        # PEP 695 generic
     model: type[T]
     not_found_error: type[NotFoundError] = NotFoundError
@@ -182,7 +223,7 @@ class BaseRepo[T: Base]:        # PEP 695 generic
     async def _paginate(stmt, ...)  -> Page[T]    # 자식이 도메인 페이지 시 재사용
 
 # 도메인 Repository = 5 줄
-class ItemRepo(BaseRepo[Item]):
+class ItemRepository(BaseRepo[Item]):
     model = Item
     not_found_error = ItemNotFoundError
 
@@ -214,27 +255,28 @@ class ItemRepo(BaseRepo[Item]):
 }
 ```
 
-## 새 도메인 추가 가이드 (Layered)
+## 새 도메인 추가 가이드 (Production BFF)
 
-5 곳에 파일 추가. 5 줄 Repository:
+5 폴더에 파일 추가. 5 줄 Repository:
 
 ```python
-# db/repositories/products.py
-class ProductRepo(BaseRepo[Product]):
+# repositories/products_repository.py
+class ProductRepository(BaseRepo[Product]):
     model = Product
     not_found_error = ProductNotFoundError
     # 도메인 특화 쿼리만 — cross-join 자유 (Layered 구조)
 ```
 
 체크리스트:
-- [ ] `db/models.py` 에 `Product` 모델 추가 (relationship 도 자유 선언)
-- [ ] `core/errors.py` 에 `ProductNotFoundError(NotFoundError)` 추가 (선택)
-- [ ] `db/repositories/products.py` — `BaseRepo[Product]` 상속, _도메인 특화 쿼리만_
-- [ ] `db/uow.py` 에 `products: ProductRepo` 필드 + `__aenter__` 인스턴스화
-- [ ] `schemas/products.py` — Pydantic (Create/Update/Public)
-- [ ] `services/products.py` — UoW 시작 + owner 가드 (필요 시) + cache invalidate
-- [ ] `routers/products.py` — `BaseRepo` 의 `add`/`get_or_404`/`update`/`delete` 활용
-- [ ] `api/v1.py` — `router.include_router(products_router)` 추가
+- [ ] `models/products.py` — `Product(Base)` 모델 (relationship 도 자유 선언)
+- [ ] `models/__init__.py` — `from app.models.products import Product` re-export 추가
+- [ ] `core/errors.py` — `ProductNotFoundError(NotFoundError)` 추가 (선택)
+- [ ] `repositories/products_repository.py` — `BaseRepo[Product]` 상속, _도메인 특화 쿼리만_
+- [ ] `db/uow.py` — `products: ProductRepository` 필드 + `__aenter__` 인스턴스화
+- [ ] `schemas/products.py` — Pydantic (Create/Update/Public — 응답은 `BaseSchema` 상속)
+- [ ] `services/products_service.py` — UoW 시작 + owner 가드 (필요 시) + cache invalidate
+- [ ] `api/v1/products.py` — `BaseRepo` 의 `add`/`get_or_404`/`update`/`delete` 활용
+- [ ] `api/v1/router.py` — `router.include_router(products_router)` 추가
 - [ ] `alembic/versions/0002_add_products.py` — 마이그레이션
 - [ ] `tests/integration/test_products_crud.py` — e2e 테스트
 - [ ] (필요 시) `tests/unit/test_product_service.py` — UoW mock
@@ -244,7 +286,7 @@ class ProductRepo(BaseRepo[Product]):
 본 템플릿이 보여주는 cross-domain 시연 — `GET /api/v1/items/{id}/detail`:
 
 ```python
-# db/repositories/items.py — relation eager load (selectinload 으로 N+1 회피)
+# repositories/items_repository.py — relation eager load (selectinload 으로 N+1 회피)
 async def get_with_owner(self, item_id: int) -> Item:
     stmt = self._base_select(Item.id == item_id).options(selectinload(Item.owner))
     item = (await self._s.execute(stmt)).scalar_one_or_none()
@@ -258,7 +300,7 @@ from app.schemas.users import OwnerSummary
 class ItemDetail(ItemPublic):
     owner: OwnerSummary
 
-# routers/items.py — owner 정보 포함 응답
+# api/v1/items.py — owner 정보 포함 응답
 @router.get("/{item_id}/detail", response_model=ApiEnvelope[ItemDetail])
 async def get_item_detail(...):
     async with uow:
@@ -268,8 +310,8 @@ async def get_item_detail(...):
 ```
 
 다른 패턴:
-- **Service 가 다른 repo 호출**: `services/items.py` 에서 `await uow.users.get_or_404(...)` 자유.
-- **Router 가 여러 service 호출**: `routers/users.py` 가 `from app.services import users, items` 둘 다 import.
+- **Service 가 다른 repo 호출**: `services/items_service.py` 에서 `await uow.users.get_or_404(...)` 자유.
+- **Router 가 여러 service 호출**: `api/v1/users.py` 가 `from app.services import users_service, items_service` 둘 다 import.
 - **Composite view**: 큰 앱이면 `app/views/` 또는 `app/queries/` 신규 layer — `UserProfileView` 같은 read model 이 user + items + ... 종합. 본 템플릿엔 미도입 (도메인 2개 / 과한 layer).
 
 ## 알려진 한계 / Pitfalls
@@ -289,7 +331,7 @@ async def get_item_detail(...):
    `os.environ.setdefault("TESTCONTAINERS_RYUK_DISABLED", "true")` 가 conftest 최상단 (다른 import 전) 에. 위치 잘못 잡으면 컨테이너 정리 안 됨.
 
 5. **owner 권한 가드 누락 = IDOR (CWE-639)**
-   `items/service.py` 의 모든 단일 조회/수정/삭제에 `_assert_owner` 호출 필수. integration 테스트로 강제 (`test_owner_guard_blocks_other_user`).
+   `services/items_service.py` 의 모든 단일 조회/수정/삭제에 `_assert_owner` 호출 필수. integration 테스트로 강제 (`test_owner_guard_blocks_other_user`).
 
 6. **OAuth2PasswordBearer tokenUrl 와 라우터 prefix 불일치**
    `tokenUrl="/api/v1/auth/login"` 이어야 Swagger UI Authorize 동작. `/auth/login` 만 쓰면 Swagger 에서 401 만 보고 헤맴.
@@ -405,7 +447,7 @@ async def get_item_detail(...):
    `os.environ.setdefault("TESTCONTAINERS_RYUK_DISABLED", "true")` 가 conftest 최상단 (다른 import 전).
 
 5. **owner 권한 가드 누락 = IDOR (CWE-639)**
-   `items/service.py` 의 모든 단일 조회/수정/삭제에 `_assert_owner` 호출 필수. integration 테스트로 강제.
+   `services/items_service.py` 의 모든 단일 조회/수정/삭제에 `_assert_owner` 호출 필수. integration 테스트로 강제.
 
 6. **OAuth2PasswordBearer tokenUrl 와 라우터 prefix 불일치**
    `tokenUrl="/api/v1/auth/login"` 이어야 Swagger UI Authorize 동작.

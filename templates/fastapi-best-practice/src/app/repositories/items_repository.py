@@ -9,11 +9,11 @@ from __future__ import annotations
 from sqlalchemy.orm import selectinload
 
 from app.core.errors import ItemNotFoundError
-from app.db.models import Item
-from app.db.repository_base import BaseRepo, Page
+from app.models import Item
+from app.repositories._base import BaseRepo, Page
 
 
-class ItemRepo(BaseRepo[Item]):
+class ItemRepository(BaseRepo[Item]):
     model = Item
     not_found_error = ItemNotFoundError
 

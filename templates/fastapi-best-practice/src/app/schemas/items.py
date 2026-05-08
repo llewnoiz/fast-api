@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
+from app.schemas._base import BaseSchema
 from app.schemas.users import OwnerSummary
 
 
@@ -24,9 +25,7 @@ class ItemUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=10000)
 
 
-class ItemPublic(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class ItemPublic(BaseSchema):
     id: int
     owner_id: int
     title: str
