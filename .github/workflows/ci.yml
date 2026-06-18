@@ -31,7 +31,7 @@ jobs:
     name: Lint + Typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v3
@@ -59,7 +59,7 @@ jobs:
     name: Unit tests (도커 무관)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v3
         with:
           version: "0.9.18"
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     # 도커 GitHub Actions 러너 _내장_ — 자동 사용 가능
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v3
         with:
           version: "0.9.18"
