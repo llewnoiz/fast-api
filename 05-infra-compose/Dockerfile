@@ -39,7 +39,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-dev --package fastapi-hello
 
 # ---------- runner stage — 가벼운 Python 3.12 ----------
-FROM python:3.12-slim-bookworm AS runner
+FROM python:3.14-slim-bookworm AS runner
 
 # 보안: non-root 사용자
 RUN groupadd --system --gid 1000 app && \
