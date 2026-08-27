@@ -28,7 +28,7 @@ jobs:
 
       # GitHub Container Registry 로그인 — OIDC 또는 GITHUB_TOKEN
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
